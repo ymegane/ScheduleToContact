@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rm -rf dist && tsc && cp src/appsscript.json dist/ && cp src/index.html dist/",
-    "deploy": "pnpm run build && clasp push",
+    "deploy": "cross-env GAS_DEPLOYMENT_ID=$npm_config_gas_deployment_id dotenv -- pnpm run build && clasp push && clasp deploy --deployment-id \"$GAS_DEPLOYMENT_ID\"",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
   },
@@ -21,6 +21,8 @@
     "@types/google-apps-script": "^2.0.7",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
+    "cross-env": "^10.1.0",
+    "dotenv-cli": "^10.0.0",
     "eslint": "^9.38.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
