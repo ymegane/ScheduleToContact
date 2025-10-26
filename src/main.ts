@@ -140,4 +140,5 @@ function generateAbsenceTextForThisMonth(): void {
   } else {
     ui.alert('対象の予定は見つかりませんでした。')
   }
+  resultSheet.activate()
 }
