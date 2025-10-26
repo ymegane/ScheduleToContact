@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2019",
-    "lib": ["ES2019", "DOM"],
+    "lib": ["ES2019", "ScriptHost"],
     "module": "CommonJS",
     "rootDir": "./src",
     "outDir": "./dist",
