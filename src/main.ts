@@ -1,3 +1,7 @@
+function doGet(e: GoogleAppsScript.Events.DoGet) {
+  return HtmlService.createHtmlOutputFromFile('index');
+}
+
 /**
  * スプレッドシートが開かれたときにカスタムメニューを追加する関数
  */

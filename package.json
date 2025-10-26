@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && cp src/appsscript.json dist/",
+    "build": "tsc && cp src/appsscript.json dist/ && cp src/index.html dist/",
     "deploy": "pnpm run build && clasp push",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
