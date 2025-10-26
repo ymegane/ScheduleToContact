@@ -77,10 +77,13 @@ function generateAbsenceTextForThisMonth(): void {
       // キーワードが空でなく、予定のタイトルにキーワードが含まれていたら
       if (keyword && eventTitle.includes(keyword)) {
         // 日付をフォーマット (例: "10月26日 (日)")
+        const startTime = event.getStartTime()
+        const dayOfWeek = startTime.getDay()
+        const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'][dayOfWeek]
         const eventDateStr: string = Utilities.formatDate(
-          event.getStartTime(),
+          startTime,
           'Asia/Tokyo',
-          'M月d日 (E)'
+          `M月d日 (${dayOfWeekStr})`
         )
 
         const line: string = `${eventDateStr} ${keyword}のため`
