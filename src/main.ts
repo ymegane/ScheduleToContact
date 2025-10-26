@@ -34,9 +34,9 @@ function generateAbsenceTextForThisMonth(): void {
 
   // ルール設定シートからルールを取得 (A列: キーワード, B列: 行動)
   // getValues() は any[][] を返すため、string[][] として扱う
-  const rules: string[][] = ruleSheet
-    .getRange(2, 1, ruleSheet.getLastRow() - 1, 3)
-    .getValues() as string[][]
+  const rules: any[][] = ruleSheet
+    .getRange(2, 1, ruleSheet.getLastRow() - 1, 4)
+    .getValues()
 
   // --- 2. カレンダーの読み込み ---
   const calendarId = PropertiesService.getScriptProperties().getProperty('CALENDAR_ID')
@@ -64,6 +64,8 @@ function generateAbsenceTextForThisMonth(): void {
   // --- 3. テキストの生成 (★TS変更点: Mapの型を明記) ---
   // key: 行動 (string), value: 連絡文の配列 (string[])
   const groupedResults = new Map<string, string[]>()
+  const requiredKeywords = rules.filter(rule => rule[3] === true).map(rule => rule[0] as string)
+  const foundRequiredKeywords = new Set<string>()
 
   // カレンダーの予定を一つずつチェック
   for (const event of events) {
@@ -74,6 +76,7 @@ function generateAbsenceTextForThisMonth(): void {
       const keyword: string = rule[0] // A列のキーワード
       const outputWord: string = rule[1] // B列の出力ワード
       const action: string = rule[2] // C列の行動
+      const isRequired: boolean = rule[3] // D列の必須フラグ
 
       // キーワードが空でなく、予定のタイトルにキーワードが含まれていたら
       if (keyword && eventTitle.includes(keyword)) {
@@ -96,6 +99,10 @@ function generateAbsenceTextForThisMonth(): void {
         }
         // groupedResults.get(action) が undefined でないことを TypeScript に伝える ( ! )
         groupedResults.get(action)!.push(line)
+
+        if (isRequired) {
+          foundRequiredKeywords.add(keyword)
+        }
 
         break
       }
@@ -140,5 +147,12 @@ function generateAbsenceTextForThisMonth(): void {
   } else {
     ui.alert('対象の予定は見つかりませんでした。')
   }
+
+  // --- 6. 必須予定のチェックと警告 ---
+  const missingKeywords = requiredKeywords.filter(keyword => !foundRequiredKeywords.has(keyword))
+  if (missingKeywords.length > 0) {
+    ui.alert(`警告: 以下の必須予定が見つかりませんでした。\n・${missingKeywords.join('\n・')}`)
+  }
+
   resultSheet.activate()
 }
