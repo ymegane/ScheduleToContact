@@ -35,7 +35,7 @@ function generateAbsenceTextForThisMonth(): void {
   // ルール設定シートからルールを取得 (A列: キーワード, B列: 行動)
   // getValues() は any[][] を返すため、string[][] として扱う
   const rules: string[][] = ruleSheet
-    .getRange(2, 1, ruleSheet.getLastRow() - 1, 2)
+    .getRange(2, 1, ruleSheet.getLastRow() - 1, 3)
     .getValues() as string[][]
 
   // --- 2. カレンダーの読み込み ---
@@ -72,7 +72,8 @@ function generateAbsenceTextForThisMonth(): void {
     // ルールを一つずつチェック
     for (const rule of rules) {
       const keyword: string = rule[0] // A列のキーワード
-      const action: string = rule[1] // B列の行動
+      const outputWord: string = rule[1] // B列の出力ワード
+      const action: string = rule[2] // C列の行動
 
       // キーワードが空でなく、予定のタイトルにキーワードが含まれていたら
       if (keyword && eventTitle.includes(keyword)) {
@@ -86,7 +87,8 @@ function generateAbsenceTextForThisMonth(): void {
           `M月d日 (${dayOfWeekStr})`
         )
 
-        const line: string = `${eventDateStr} ${keyword}のため`
+        const wordToUse = outputWord || keyword // B列が空ならA列のキーワードを使う
+        const line: string = `${eventDateStr} ${wordToUse}のため`
 
         // Mapにデータを格納
         if (!groupedResults.has(action)) {
@@ -115,12 +117,27 @@ function generateAbsenceTextForThisMonth(): void {
 
       outputData.push([''])
     }
+  } else {
+    outputData.push(['対象の予定は見つかりませんでした。'])
+    outputData.push([''])
+  }
 
-    // データをA1セルから一括書き込み
-    resultSheet.getRange(1, 1, outputData.length, 1).setValues(outputData)
+  // --- 5. デバッグ用に取得した予定を書き出す ---
+  outputData.push(['--- 取得したカレンダーの予定 --- '])
+  if (events.length > 0) {
+    for (const event of events) {
+      const startTime = Utilities.formatDate(event.getStartTime(), 'Asia/Tokyo', 'M/d HH:mm');
+      outputData.push([`${startTime} ${event.getTitle()}`]);
+    }
+  } else {
+    outputData.push(['（予定なし）'])
+  }
+
+  // データをA1セルから一括書き込み
+  resultSheet.getRange(1, 1, outputData.length, 1).setValues(outputData)
+  if (groupedResults.size > 0) {
     ui.alert('連絡テキストを生成しました！')
   } else {
-    resultSheet.getRange(1, 1).setValue('対象の予定は見つかりませんでした。')
     ui.alert('対象の予定は見つかりませんでした。')
   }
 }
