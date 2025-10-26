@@ -79,50 +79,48 @@ function _generateContactTextData() {
  * Web App Endpoint
  * ----------------------------------------------------------------
  */
-function generateTextForWebApp(): string {
+function generateTextForWebApp(): { mainOutput: string, debugEvents: {time: string, title: string}[], missingKeywordsWarning: string } {
   try {
     const { groupedResults, events, missingKeywords } = _generateContactTextData();
 
     // --- 4. 出力文字列の組み立て ---
-    let outputText = ''
+    let mainOutput = ''
     if (groupedResults.size > 0) {
       for (const [action, lines] of groupedResults.entries()) {
-        outputText += `[${action}]\n`
+        mainOutput += `[${action}]\n`
         for (const line of lines) {
           const description = line[0]
           const date = line[1]
           const dateStr = Utilities.formatDate(date, 'Asia/Tokyo', 'M/d HH:mm')
-          outputText += `    ${description} (${dateStr})\n`
+          mainOutput += `    ${description} (${dateStr})\n`
         }
-        outputText += '\n'
+        mainOutput += '\n'
       }
     } else {
-      outputText += '対象の予定は見つかりませんでした。\n\n'
+      mainOutput += '対象の予定は見つかりませんでした。\n\n'
     }
 
     // --- 5. デバッグ情報 ---
-    outputText += '--- 取得したカレンダーの予定 --- \n'
-    if (events.length > 0) {
-      for (const event of events) {
-        const startTime = Utilities.formatDate(event.getStartTime(), 'Asia/Tokyo', 'M/d HH:mm');
-        outputText += `${startTime} ${event.getTitle()}\n`;
+    const debugEvents = events.map(event => {
+      return {
+        time: Utilities.formatDate(event.getStartTime(), 'Asia/Tokyo', 'M/d HH:mm'),
+        title: event.getTitle()
       }
-    } else {
-      outputText += '（予定なし）\n'
-    }
-    outputText += '\n'
+    });
 
     // --- 6. 必須予定のチェックと警告 ---
+    let missingKeywordsWarning = '';
     if (missingKeywords.length > 0) {
-      outputText += `警告: 以下の必須予定が見つかりませんでした。\n・${missingKeywords.join('\n・')}`
+      missingKeywordsWarning = `警告: 以下の必須予定が見つかりませんでした。\n・${missingKeywords.join('\n・')}`
     }
 
-    return outputText
+    return { mainOutput, debugEvents, missingKeywordsWarning }
   } catch (e) {
     if (e instanceof Error) {
-      return e.message;
+      // Return error in the same format
+      return { mainOutput: e.message, debugEvents: [], missingKeywordsWarning: '' };
     }
-    return String(e);
+    return { mainOutput: String(e), debugEvents: [], missingKeywordsWarning: '' };
   }
 }
 

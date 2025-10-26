@@ -4,32 +4,76 @@
     <base target="_top">
     <style>
       body { font-family: sans-serif; }
-      #result { white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 100px; }
+      pre { white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 100px; }
       button { padding: 10px 15px; font-size: 16px; }
+      table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+      th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+      th { background-color: #f2f2f2; }
     </style>
   </head>
   <body>
     <h1>Schedule To Contact - Web App</h1>
     <button id="generateBtn">連絡テキストを生成</button>
+    
     <h2>生成結果:</h2>
-    <div id="result"></div>
+    <pre id="result"></pre>
+    
+    <div id="warning" style="color: red; white-space: pre-wrap; margin-top: 10px; font-weight: bold;"></div>
+
+    <h2>デバッグ情報: 取得したカレンダーの予定</h2>
+    <table id="eventTable">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Title</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Events will be inserted here by JavaScript -->
+      </tbody>
+    </table>
 
     <script>
       document.getElementById('generateBtn').addEventListener('click', function() {
         this.disabled = true;
         this.textContent = '生成中...';
+        
+        // Clear previous results
+        document.getElementById('result').textContent = '';
+        document.getElementById('warning').textContent = '';
+        const tableBody = document.getElementById('eventTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+
         google.script.run
-          .withSuccessHandler(function(resultText) {
-            document.getElementById('result').textContent = resultText;
+          .withSuccessHandler(function(response) {
+            document.getElementById('result').textContent = response.mainOutput;
+            document.getElementById('warning').textContent = response.missingKeywordsWarning;
+
+            const tableBody = document.getElementById('eventTable').getElementsByTagName('tbody')[0];
+            if (response.debugEvents && response.debugEvents.length > 0) {
+              response.debugEvents.forEach(function(event) {
+                const row = tableBody.insertRow();
+                const cell1 = row.insertCell();
+                const cell2 = row.insertCell();
+                cell1.textContent = event.time;
+                cell2.textContent = event.title;
+              });
+            } else {
+              const row = tableBody.insertRow();
+              const cell1 = row.insertCell();
+              cell1.colSpan = 2;
+              cell1.textContent = '（予定なし）';
+            }
+
             document.getElementById('generateBtn').disabled = false;
             document.getElementById('generateBtn').textContent = '連絡テキストを生成';
           })
           .withFailureHandler(function(error) {
-            document.getElementById('result').textContent = 'エラーが発生しました: ' + error.message;
+            document.getElementById('warning').textContent = 'エラーが発生しました: ' + error.message;
             document.getElementById('generateBtn').disabled = false;
             document.getElementById('generateBtn').textContent = '連絡テキストを生成';
           })
-          .generateTextForWebApp(); // この関数を後でサーバーサイドに作成します
+          .generateTextForWebApp();
       });
     </script>
   </body>
