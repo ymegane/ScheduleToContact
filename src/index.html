@@ -3,12 +3,18 @@
   <head>
     <base target="_top">
     <style>
-      body { font-family: sans-serif; }
-      pre { white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 100px; }
-      button { padding: 10px 15px; font-size: 16px; }
+      body { font-family: sans-serif; margin: 1em; font-size: 18px; }
+      textarea { white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 200px; font-size: 16px; width: 100%; box-sizing: border-box; }
+      button { padding: 10px 15px; font-size: 16px; width: 100%; box-sizing: border-box; }
       table { border-collapse: collapse; width: 100%; margin-top: 10px; }
       th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
       th { background-color: #f2f2f2; }
+      .table-container { overflow-x: auto; }
+
+      @media screen and (max-width: 600px) {
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.2em; }
+      }
     </style>
   </head>
   <body>
@@ -16,7 +22,7 @@
     <button id="generateBtn">連絡テキストを生成</button>
     
     <h2>生成結果:</h2>
-    <pre id="result"></pre>
+    <textarea id="result"></textarea>
     
     <div id="warning" style="color: red; white-space: pre-wrap; margin-top: 10px; font-weight: bold;"></div>
 
@@ -47,7 +53,7 @@
 
         google.script.run
           .withSuccessHandler(function(response) {
-            document.getElementById('result').textContent = response.mainOutput;
+            document.getElementById('result').value = response.mainOutput;
             document.getElementById('warning').textContent = response.missingKeywordsWarning;
 
             const tableBody = document.getElementById('eventTable').getElementsByTagName('tbody')[0];
