@@ -21,7 +21,7 @@
     <h1>Schedule To Contact - Web App</h1>
     <button id="generateBtn">連絡テキストを生成</button>
     
-    <h2>生成結果:</h2>
+    <h2>生成結果: <button id="copyBtn" type="button">コピー</button> <span id="copyNotification" style="display: none; color: green; font-weight: normal;">コピーしました！</span></h2>
     <textarea id="result"></textarea>
     
     <div id="warning" style="color: red; white-space: pre-wrap; margin-top: 10px; font-weight: bold;"></div>
@@ -46,7 +46,7 @@
         this.textContent = '生成中...';
         
         // Clear previous results
-        document.getElementById('result').textContent = '';
+        document.getElementById('result').value = '';
         document.getElementById('warning').textContent = '';
         const tableBody = document.getElementById('eventTable').getElementsByTagName('tbody')[0];
         tableBody.innerHTML = '';
@@ -94,6 +94,19 @@
             document.getElementById('generateBtn').textContent = '連絡テキストを生成';
           })
           .generateTextForWebApp();
+      });
+
+      document.getElementById('copyBtn').addEventListener('click', function() {
+        const resultText = document.getElementById('result').value;
+        navigator.clipboard.writeText(resultText).then(function() {
+          const notification = document.getElementById('copyNotification');
+          notification.style.display = 'inline';
+          setTimeout(function() {
+            notification.style.display = 'none';
+          }, 2000);
+        }, function(err) {
+          console.error('Could not copy text: ', err);
+        });
       });
     </script>
   </body>
