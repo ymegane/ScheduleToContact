@@ -2,8 +2,105 @@ function doGet(e: GoogleAppsScript.Events.DoGet) {
   return HtmlService.createHtmlOutputFromFile('index');
 }
 
-function generateTextForWebApp() {
-  return 'サーバーからのテストメッセージです。';
+function generateTextForWebApp(): string {
+  // この関数はWebアプリ用に、結果を文字列として返す
+
+  // --- 1. 設定の読み込み ---
+  const ss = SpreadsheetApp.getActiveSpreadsheet()
+  const ruleSheet = ss.getSheetByName('ルール設定')
+  if (!ruleSheet) {
+    return 'エラー: 「ルール設定」シートが見つかりません。'
+  }
+  const rules: any[][] = ruleSheet
+    .getRange(2, 1, ruleSheet.getLastRow() - 1, 4)
+    .getValues()
+
+  // --- 2. カレンダーの読み込み ---
+  const calendarId = PropertiesService.getScriptProperties().getProperty('CALENDAR_ID')
+  let calendar: GoogleAppsScript.Calendar.Calendar
+  if (calendarId) {
+    calendar = CalendarApp.getCalendarById(calendarId)
+    if (!calendar) {
+      return `エラー: ID「${calendarId}」のカレンダーが見つかりません。スクリプトプロパティを確認してください。`
+    }
+  } else {
+    calendar = CalendarApp.getDefaultCalendar()
+  }
+  const today: Date = new Date()
+  const startDate: Date = new Date(today.getFullYear(), today.getMonth(), 1)
+  const endDate: Date = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  const events: GoogleAppsScript.Calendar.CalendarEvent[] = calendar.getEvents(
+    startDate,
+    endDate
+  )
+
+  // --- 3. テキストの生成 ---
+  const groupedResults = new Map<string, [string, Date][]>()
+  const requiredKeywords = rules.filter(rule => rule[3] === true).map(rule => rule[0] as string)
+  const foundRequiredKeywords = new Set<string>()
+
+  for (const event of events) {
+    const eventTitle: string = event.getTitle()
+    for (const rule of rules) {
+      const keyword: string = rule[0]
+      const outputWord: string = rule[1]
+      const action: string = rule[2]
+      const isRequired: boolean = rule[3]
+
+      if (keyword && eventTitle.includes(keyword)) {
+        const startTime = event.getStartTime()
+        const wordToUse = outputWord || keyword
+        const line: string = `${wordToUse}のため`
+
+        if (!groupedResults.has(action)) {
+          groupedResults.set(action, [])
+        }
+        groupedResults.get(action)!.push([line, startTime as any])
+
+        if (isRequired) {
+          foundRequiredKeywords.add(keyword)
+        }
+        break
+      }
+    }
+  }
+
+  // --- 4. 出力文字列の組み立て ---
+  let outputText = ''
+  if (groupedResults.size > 0) {
+    for (const [action, lines] of groupedResults.entries()) {
+      outputText += `[${action}]\n`
+      for (const line of lines) {
+        const description = line[0]
+        const date = line[1]
+        const dateStr = Utilities.formatDate(date, 'Asia/Tokyo', 'M/d HH:mm')
+        outputText += `    ${description} (${dateStr})\n`
+      }
+      outputText += '\n'
+    }
+  } else {
+    outputText += '対象の予定は見つかりませんでした。\n\n'
+  }
+
+  // --- 5. デバッグ情報 ---
+  outputText += '--- 取得したカレンダーの予定 --- \n'
+  if (events.length > 0) {
+    for (const event of events) {
+      const startTime = Utilities.formatDate(event.getStartTime(), 'Asia/Tokyo', 'M/d HH:mm');
+      outputText += `${startTime} ${event.getTitle()}\n`;
+    }
+  } else {
+    outputText += '（予定なし）\n'
+  }
+  outputText += '\n'
+
+  // --- 6. 必須予定のチェックと警告 ---
+  const missingKeywords = requiredKeywords.filter(keyword => !foundRequiredKeywords.has(keyword))
+  if (missingKeywords.length > 0) {
+    outputText += `警告: 以下の必須予定が見つかりませんでした。\n・${missingKeywords.join('\n・')}`
+  }
+
+  return outputText
 }
 
 /**
