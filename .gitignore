@@ -35,5 +35,5 @@ out/
 *.sln
 *.bak
 
-# clasp
+# Ignore clasp credential files
 .clasp.json
