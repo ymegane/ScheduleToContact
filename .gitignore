@@ -34,3 +34,6 @@ out/
 *.njsproj
 *.sln
 *.bak
+
+# clasp
+.clasp.json
