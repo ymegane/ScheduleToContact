@@ -2,18 +2,25 @@
 <html>
   <head>
     <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       body { font-family: sans-serif; margin: 1em; font-size: 18px; }
       textarea { white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 200px; font-size: 16px; width: 100%; box-sizing: border-box; }
       button { padding: 10px 15px; font-size: 16px; width: 100%; box-sizing: border-box; }
+      #copyBtn { width: auto; }
+      .result-header { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5em; }
+      .result-header h2 { margin: 0; }
+      #copyNotification { color: green; font-weight: normal; margin-left: 0.5em; }
       table { border-collapse: collapse; width: 100%; margin-top: 10px; }
       th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
       th { background-color: #f2f2f2; }
       .table-container { overflow-x: auto; }
 
       @media screen and (max-width: 600px) {
+        body { margin: 0.8em; }
         h1 { font-size: 1.5em; }
         h2 { font-size: 1.2em; }
+        .result-header { flex-direction: column; align-items: flex-start; gap: 0.5em; }
       }
     </style>
   </head>
@@ -21,24 +28,32 @@
     <h1>Schedule To Contact - Web App</h1>
     <button id="generateBtn">連絡テキストを生成</button>
     
-    <h2>生成結果: <button id="copyBtn" type="button">コピー</button> <span id="copyNotification" style="display: none; color: green; font-weight: normal;">コピーしました！</span></h2>
+    <div class="result-header">
+      <h2>生成結果:</h2>
+      <div>
+        <button id="copyBtn" type="button">コピー</button>
+        <span id="copyNotification" style="display: none;">コピーしました！</span>
+      </div>
+    </div>
     <textarea id="result"></textarea>
     
     <div id="warning" style="color: red; white-space: pre-wrap; margin-top: 10px; font-weight: bold;"></div>
 
     <h2>取得したカレンダーの予定</h2>
-    <table id="eventTable">
-      <thead>
-        <tr>
-          <th>日付</th>
-          <th>時間</th>
-          <th>タイトル</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Events will be inserted here by JavaScript -->
-      </tbody>
-    </table>
+    <div class="table-container">
+      <table id="eventTable">
+        <thead>
+          <tr>
+            <th>日付</th>
+            <th>時間</th>
+            <th>タイトル</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Events will be inserted here by JavaScript -->
+        </tbody>
+      </table>
+    </div>
 
     <script>
       document.getElementById('generateBtn').addEventListener('click', function() {
