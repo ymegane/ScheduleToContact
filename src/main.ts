@@ -62,8 +62,8 @@ function generateAbsenceTextForThisMonth(): void {
   )
 
   // --- 3. テキストの生成 (★TS変更点: Mapの型を明記) ---
-  // key: 行動 (string), value: 連絡文の配列 (string[])
-  const groupedResults = new Map<string, string[]>()
+  // key: 行動 (string), value: [連絡文, 日時] の配列
+  const groupedResults = new Map<string, [string, Date][]>()
   const requiredKeywords = rules.filter(rule => rule[3] === true).map(rule => rule[0] as string)
   const foundRequiredKeywords = new Set<string>()
 
@@ -80,25 +80,15 @@ function generateAbsenceTextForThisMonth(): void {
 
       // キーワードが空でなく、予定のタイトルにキーワードが含まれていたら
       if (keyword && eventTitle.includes(keyword)) {
-        // 日付をフォーマット (例: "10月26日 (日)")
         const startTime = event.getStartTime()
-        const dayOfWeek = startTime.getDay()
-        const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'][dayOfWeek]
-        const eventDateStr: string = Utilities.formatDate(
-          startTime,
-          'Asia/Tokyo',
-          `M月d日 (${dayOfWeekStr})`
-        )
-
         const wordToUse = outputWord || keyword // B列が空ならA列のキーワードを使う
-        const line: string = `${eventDateStr} ${wordToUse}のため`
+        const line: string = `${wordToUse}のため`
 
         // Mapにデータを格納
         if (!groupedResults.has(action)) {
           groupedResults.set(action, []) // actionをキーにして新しい配列を作成
         }
-        // groupedResults.get(action) が undefined でないことを TypeScript に伝える ( ! )
-        groupedResults.get(action)!.push(line)
+        groupedResults.get(action)!.push([line, startTime as any])
 
         if (isRequired) {
           foundRequiredKeywords.add(keyword)
@@ -111,37 +101,40 @@ function generateAbsenceTextForThisMonth(): void {
 
   // --- 4. スプレッドシートへの書き込み ---
   resultSheet.clear()
-  const outputData: string[][] = [] // スプレッドシートに書き込むための2D配列
+  const outputData: (string | Date)[][] = [] // スプレッドシートに書き込むための2D配列
 
   if (groupedResults.size > 0) {
     // Mapからキー（行動）ごとに処理
     for (const [action, lines] of groupedResults.entries()) {
-      outputData.push([`[${action}]`])
+      outputData.push([`[${action}]`, ''])
 
       for (const line of lines) {
-        outputData.push([`    ${line}`])
+        const description = line[0]
+        const date = line[1]
+        const dateStr = Utilities.formatDate(date, 'Asia/Tokyo', 'M/d HH:mm')
+        outputData.push([`    ${description}`, dateStr])
       }
 
-      outputData.push([''])
+      outputData.push(['', ''])
     }
   } else {
-    outputData.push(['対象の予定は見つかりませんでした。'])
-    outputData.push([''])
+    outputData.push(['対象の予定は見つかりませんでした。', ''])
+    outputData.push(['', ''])
   }
 
   // --- 5. デバッグ用に取得した予定を書き出す ---
-  outputData.push(['--- 取得したカレンダーの予定 --- '])
+  outputData.push(['--- 取得したカレンダーの予定 --- ', ''])
   if (events.length > 0) {
     for (const event of events) {
       const startTime = Utilities.formatDate(event.getStartTime(), 'Asia/Tokyo', 'M/d HH:mm');
-      outputData.push([`${startTime} ${event.getTitle()}`]);
+      outputData.push([`${startTime} ${event.getTitle()}`, '']);
     }
   } else {
-    outputData.push(['（予定なし）'])
+    outputData.push(['（予定なし）', ''])
   }
 
   // データをA1セルから一括書き込み
-  resultSheet.getRange(1, 1, outputData.length, 1).setValues(outputData)
+  resultSheet.getRange(1, 1, outputData.length, 2).setValues(outputData)
   if (groupedResults.size > 0) {
     ui.alert('連絡テキストを生成しました！')
   } else {
