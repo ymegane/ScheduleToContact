@@ -101,12 +101,18 @@ function generateTextForWebApp(): { mainOutput: string, debugEvents: {time: stri
     }
 
     // --- 5. デバッグ情報 ---
-    const debugEvents = events.map(event => {
-      return {
-        time: Utilities.formatDate(event.getStartTime(), 'Asia/Tokyo', 'M/d HH:mm'),
-        title: event.getTitle()
-      }
-    });
+    const debugEvents = events
+      .sort((a, b) => a.getStartTime().getTime() - b.getStartTime().getTime())
+      .map(event => {
+        const startTime = event.getStartTime();
+        const dayOfWeek = startTime.getDay();
+        const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'][dayOfWeek];
+        return {
+          date: Utilities.formatDate(startTime, 'Asia/Tokyo', `M/d (${dayOfWeekStr})`),
+          time: Utilities.formatDate(startTime, 'Asia/Tokyo', 'HH:mm'),
+          title: event.getTitle()
+        }
+      });
 
     // --- 6. 必須予定のチェックと警告 ---
     let missingKeywordsWarning = '';

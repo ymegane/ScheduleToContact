@@ -7,7 +7,7 @@
       pre { white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 100px; }
       button { padding: 10px 15px; font-size: 16px; }
       table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-      th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+      th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
       th { background-color: #f2f2f2; }
     </style>
   </head>
@@ -20,12 +20,13 @@
     
     <div id="warning" style="color: red; white-space: pre-wrap; margin-top: 10px; font-weight: bold;"></div>
 
-    <h2>デバッグ情報: 取得したカレンダーの予定</h2>
+    <h2>取得したカレンダーの予定</h2>
     <table id="eventTable">
       <thead>
         <tr>
-          <th>Time</th>
-          <th>Title</th>
+          <th>日付</th>
+          <th>時間</th>
+          <th>タイトル</th>
         </tr>
       </thead>
       <tbody>
@@ -51,17 +52,30 @@
 
             const tableBody = document.getElementById('eventTable').getElementsByTagName('tbody')[0];
             if (response.debugEvents && response.debugEvents.length > 0) {
-              response.debugEvents.forEach(function(event) {
-                const row = tableBody.insertRow();
-                const cell1 = row.insertCell();
-                const cell2 = row.insertCell();
-                cell1.textContent = event.time;
-                cell2.textContent = event.title;
-              });
+              const eventsByDate = response.debugEvents.reduce(function (acc, event) {
+                (acc[event.date] = acc[event.date] || []).push(event);
+                return acc;
+              }, {});
+
+              for (const date in eventsByDate) {
+                const events = eventsByDate[date];
+                events.forEach(function(event, index) {
+                  const row = tableBody.insertRow();
+                  if (index === 0) {
+                    const dateCell = row.insertCell();
+                    dateCell.textContent = date;
+                    dateCell.rowSpan = events.length;
+                  }
+                  const timeCell = row.insertCell();
+                  timeCell.textContent = event.time;
+                  const titleCell = row.insertCell();
+                  titleCell.textContent = event.title;
+                });
+              }
             } else {
               const row = tableBody.insertRow();
               const cell1 = row.insertCell();
-              cell1.colSpan = 2;
+              cell1.colSpan = 3;
               cell1.textContent = '（予定なし）';
             }
 
