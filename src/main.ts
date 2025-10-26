@@ -2,6 +2,10 @@ function doGet(e: GoogleAppsScript.Events.DoGet) {
   return HtmlService.createHtmlOutputFromFile('index');
 }
 
+function generateTextForWebApp() {
+  return 'サーバーからのテストメッセージです。';
+}
+
 /**
  * スプレッドシートが開かれたときにカスタムメニューを追加する関数
  */
