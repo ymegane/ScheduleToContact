@@ -1,5 +1,5 @@
 function doGet(e: GoogleAppsScript.Events.DoGet) {
-  return HtmlService.createHtmlOutputFromFile('index');
+  return HtmlService.createHtmlOutputFromFile('index')
 }
 
 /**
@@ -19,12 +19,15 @@ function _generateContactTextData() {
     .getValues()
 
   // --- 2. カレンダーの読み込み ---
-  const calendarId = PropertiesService.getScriptProperties().getProperty('CALENDAR_ID')
+  const calendarId =
+    PropertiesService.getScriptProperties().getProperty('CALENDAR_ID')
   let calendar: GoogleAppsScript.Calendar.Calendar
   if (calendarId) {
     calendar = CalendarApp.getCalendarById(calendarId)
     if (!calendar) {
-      throw new Error(`エラー: ID「${calendarId}」のカレンダーが見つかりません。スクリプトプロパティを確認してください。`)
+      throw new Error(
+        `エラー: ID「${calendarId}」のカレンダーが見つかりません。スクリプトプロパティを確認してください。`
+      )
     }
   } else {
     calendar = CalendarApp.getDefaultCalendar()
@@ -39,7 +42,9 @@ function _generateContactTextData() {
 
   // --- 3. テキストの生成 ---
   const groupedResults = new Map<string, [string, Date][]>()
-  const requiredKeywords = rules.filter(rule => rule[3] === true).map(rule => rule[0] as string)
+  const requiredKeywords = rules
+    .filter((rule) => rule[3] === true)
+    .map((rule) => rule[0] as string)
   const foundRequiredKeywords = new Set<string>()
 
   for (const event of events) {
@@ -68,20 +73,26 @@ function _generateContactTextData() {
     }
   }
 
-  const missingKeywords = requiredKeywords.filter(keyword => !foundRequiredKeywords.has(keyword))
+  const missingKeywords = requiredKeywords.filter(
+    (keyword) => !foundRequiredKeywords.has(keyword)
+  )
 
   return { groupedResults, events, missingKeywords }
 }
-
 
 /**
  * ----------------------------------------------------------------
  * Web App Endpoint
  * ----------------------------------------------------------------
  */
-function generateTextForWebApp(): { mainOutput: string, debugEvents: {time: string, title: string}[], missingKeywordsWarning: string } {
+function generateTextForWebApp(): {
+  mainOutput: string
+  debugEvents: { time: string; title: string }[]
+  missingKeywordsWarning: string
+} {
   try {
-    const { groupedResults, events, missingKeywords } = _generateContactTextData();
+    const { groupedResults, events, missingKeywords } =
+      _generateContactTextData()
 
     // --- 4. 出力文字列の組み立て ---
     let mainOutput = ''
@@ -103,19 +114,25 @@ function generateTextForWebApp(): { mainOutput: string, debugEvents: {time: stri
     // --- 5. デバッグ情報 ---
     const debugEvents = events
       .sort((a, b) => a.getStartTime().getTime() - b.getStartTime().getTime())
-      .map(event => {
-        const startTime = event.getStartTime();
-        const dayOfWeek = startTime.getDay();
-        const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'][dayOfWeek];
+      .map((event) => {
+        const startTime = event.getStartTime()
+        const dayOfWeek = startTime.getDay()
+        const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'][
+          dayOfWeek
+        ]
         return {
-          date: Utilities.formatDate(startTime, 'Asia/Tokyo', `M/d (${dayOfWeekStr})`),
+          date: Utilities.formatDate(
+            startTime,
+            'Asia/Tokyo',
+            `M/d (${dayOfWeekStr})`
+          ),
           time: Utilities.formatDate(startTime, 'Asia/Tokyo', 'HH:mm'),
-          title: event.getTitle()
+          title: event.getTitle(),
         }
-      });
+      })
 
     // --- 6. 必須予定のチェックと警告 ---
-    let missingKeywordsWarning = '';
+    let missingKeywordsWarning = ''
     if (missingKeywords.length > 0) {
       missingKeywordsWarning = `警告: 以下の必須予定が見つかりませんでした。\n・${missingKeywords.join('\n・')}`
     }
@@ -124,9 +141,17 @@ function generateTextForWebApp(): { mainOutput: string, debugEvents: {time: stri
   } catch (e) {
     if (e instanceof Error) {
       // Return error in the same format
-      return { mainOutput: e.message, debugEvents: [], missingKeywordsWarning: '' };
+      return {
+        mainOutput: e.message,
+        debugEvents: [],
+        missingKeywordsWarning: '',
+      }
     }
-    return { mainOutput: String(e), debugEvents: [], missingKeywordsWarning: '' };
+    return {
+      mainOutput: String(e),
+      debugEvents: [],
+      missingKeywordsWarning: '',
+    }
   }
 }
 
@@ -147,13 +172,15 @@ function onOpen(): void {
 function generateAbsenceTextForThisMonth(): void {
   const ui = SpreadsheetApp.getUi()
   try {
-    const resultSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('生成結果')
+    const resultSheet =
+      SpreadsheetApp.getActiveSpreadsheet().getSheetByName('生成結果')
     if (!resultSheet) {
       ui.alert('エラー: 「生成結果」シートが見つかりません。')
       return
     }
 
-    const { groupedResults, events, missingKeywords } = _generateContactTextData();
+    const { groupedResults, events, missingKeywords } =
+      _generateContactTextData()
 
     // --- 4. スプレッドシートへの書き込み ---
     resultSheet.clear()
@@ -179,8 +206,12 @@ function generateAbsenceTextForThisMonth(): void {
     outputData.push(['--- 取得したカレンダーの予定 --- ', ''])
     if (events.length > 0) {
       for (const event of events) {
-        const startTime = Utilities.formatDate(event.getStartTime(), 'Asia/Tokyo', 'M/d HH:mm');
-        outputData.push([`${startTime} ${event.getTitle()}`, '']);
+        const startTime = Utilities.formatDate(
+          event.getStartTime(),
+          'Asia/Tokyo',
+          'M/d HH:mm'
+        )
+        outputData.push([`${startTime} ${event.getTitle()}`, ''])
       }
     } else {
       outputData.push(['（予定なし）', ''])
@@ -188,21 +219,22 @@ function generateAbsenceTextForThisMonth(): void {
 
     // データをA1セルから一括書き込み
     resultSheet.getRange(1, 1, outputData.length, 2).setValues(outputData)
-    
+
     ui.alert('連絡テキストを生成しました！')
 
     // --- 6. 必須予定のチェックと警告 ---
     if (missingKeywords.length > 0) {
-      ui.alert(`警告: 以下の必須予定が見つかりませんでした。\n・${missingKeywords.join('\n・')}`)
+      ui.alert(
+        `警告: 以下の必須予定が見つかりませんでした。\n・${missingKeywords.join('\n・')}`
+      )
     }
 
     resultSheet.activate()
-
   } catch (e) {
     if (e instanceof Error) {
-      ui.alert(e.message);
+      ui.alert(e.message)
     } else {
-      ui.alert(String(e));
+      ui.alert(String(e))
     }
   }
 }
