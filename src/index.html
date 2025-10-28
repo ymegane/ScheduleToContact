@@ -26,6 +26,14 @@
   </head>
   <body>
     <h1>Schedule To Contact - Web App</h1>
+
+    <div>
+      <label for="yearSelect">年:</label>
+      <select id="yearSelect"></select>
+      <label for="monthSelect">月:</label>
+      <select id="monthSelect"></select>
+    </div>
+    <br>
     <button id="generateBtn">連絡テキストを生成</button>
     
     <div class="result-header">
@@ -56,6 +64,38 @@
     </div>
 
     <script>
+      // --- Populate Year/Month Dropdowns ---
+      window.addEventListener('DOMContentLoaded', (event) => {
+        const yearSelect = document.getElementById('yearSelect');
+        const monthSelect = document.getElementById('monthSelect');
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const defaultYear = nextMonthDate.getFullYear();
+        const defaultMonth = nextMonthDate.getMonth() + 1;
+
+        // Populate years (e.g., current year +/- 2)
+        for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+          const option = document.createElement('option');
+          option.value = i;
+          option.textContent = i;
+          yearSelect.appendChild(option);
+        }
+
+        // Populate months
+        for (let i = 1; i <= 12; i++) {
+          const option = document.createElement('option');
+          option.value = i;
+          option.textContent = i;
+          monthSelect.appendChild(option);
+        }
+
+        // Set default to next month
+        yearSelect.value = defaultYear;
+        monthSelect.value = defaultMonth;
+      });
+
+      // --- Button Click Handlers ---
       document.getElementById('generateBtn').addEventListener('click', function() {
         this.disabled = true;
         this.textContent = '生成中...';
@@ -65,6 +105,10 @@
         document.getElementById('warning').textContent = '';
         const tableBody = document.getElementById('eventTable').getElementsByTagName('tbody')[0];
         tableBody.innerHTML = '';
+
+        // Get selected year and month
+        const year = parseInt(document.getElementById('yearSelect').value, 10);
+        const month = parseInt(document.getElementById('monthSelect').value, 10);
 
         google.script.run
           .withSuccessHandler(function(response) {
@@ -108,7 +152,7 @@
             document.getElementById('generateBtn').disabled = false;
             document.getElementById('generateBtn').textContent = '連絡テキストを生成';
           })
-          .generateTextForWebApp();
+          .generateTextForWebApp(year, month); // Pass selected year and month
       });
 
       document.getElementById('copyBtn').addEventListener('click', function() {
