@@ -1,4 +1,5 @@
-function doGet(e: GoogleAppsScript.Events.DoGet) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function doGet(_e: GoogleAppsScript.Events.DoGet) {
   return HtmlService.createHtmlOutputFromFile('index')
 }
 
@@ -14,6 +15,7 @@ function _generateContactTextData() {
   if (!ruleSheet) {
     throw new Error('エラー: 「ルール設定」シートが見つかりません。')
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rules: any[][] = ruleSheet
     .getRange(2, 1, ruleSheet.getLastRow() - 1, 4)
     .getValues()
@@ -63,6 +65,7 @@ function _generateContactTextData() {
         if (!groupedResults.has(action)) {
           groupedResults.set(action, [])
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         groupedResults.get(action)!.push([line, startTime as any])
 
         if (isRequired) {
@@ -85,6 +88,7 @@ function _generateContactTextData() {
  * Web App Endpoint
  * ----------------------------------------------------------------
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateTextForWebApp(): {
   mainOutput: string
   debugEvents: { time: string; title: string }[]
