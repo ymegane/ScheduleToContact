@@ -7,7 +7,7 @@ function doGet(e: GoogleAppsScript.Events.DoGet) {
  * Core Logic Function
  * ----------------------------------------------------------------
  */
-function _generateContactTextData(year?: number, month?: number) {
+function _generateContactTextData() {
   // --- 1. 設定の読み込み ---
   const ss = SpreadsheetApp.getActiveSpreadsheet()
   const ruleSheet = ss.getSheetByName('ルール設定')
@@ -32,25 +32,9 @@ function _generateContactTextData(year?: number, month?: number) {
   } else {
     calendar = CalendarApp.getDefaultCalendar()
   }
-  const now = new Date()
-  let targetYear: number
-  let targetMonth: number // 1-indexed month (1 for Jan, 12 for Dec)
-
-  if (year !== undefined && month !== undefined) {
-    targetYear = year
-    targetMonth = month
-  } else {
-    // Default to next month
-    const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    targetYear = nextMonthDate.getFullYear()
-    targetMonth = nextMonthDate.getMonth() + 1
-  }
-
-  // Note: The 'month' parameter in the Date constructor is 0-indexed (0=Jan, 11=Dec)
-  const startDate = new Date(targetYear, targetMonth - 1, 1)
-  // Use the first day of the next month as the end date to include all events of the target month.
-  const endDate = new Date(targetYear, targetMonth, 1)
-
+  const today: Date = new Date()
+  const startDate: Date = new Date(today.getFullYear(), today.getMonth(), 1)
+  const endDate: Date = new Date(today.getFullYear(), today.getMonth() + 1, 0)
   const events: GoogleAppsScript.Calendar.CalendarEvent[] = calendar.getEvents(
     startDate,
     endDate
@@ -101,17 +85,14 @@ function _generateContactTextData(year?: number, month?: number) {
  * Web App Endpoint
  * ----------------------------------------------------------------
  */
-function generateTextForWebApp(
-  year?: number,
-  month?: number
-): {
+function generateTextForWebApp(): {
   mainOutput: string
   debugEvents: { time: string; title: string }[]
   missingKeywordsWarning: string
 } {
   try {
     const { groupedResults, events, missingKeywords } =
-      _generateContactTextData(year, month)
+      _generateContactTextData()
 
     // --- 4. 出力文字列の組み立て ---
     let mainOutput = ''
@@ -235,15 +216,12 @@ function generateAbsenceTextForSpecificMonth(): void {
           const description = line[0]
           const date = line[1]
           const dateStr = Utilities.formatDate(date, 'Asia/Tokyo', 'M/d HH:mm')
-          outputData.push([`    ${description}`, dateStr])
+          outputData.push([`    ${dateStr} ${description}`])
         }
         outputData.push(['', ''])
       }
     } else {
-      outputData.push([
-        `[${year}年${month}月] 対象の予定は見つかりませんでした。`,
-        '',
-      ])
+      outputData.push([`[${year}年${month}月] 対象の予定は見つかりませんでした。`, ''])
       outputData.push(['', ''])
     }
 
@@ -291,14 +269,12 @@ function generateAbsenceTextForSpecificMonth(): void {
 function onOpen(): void {
   const ui = SpreadsheetApp.getUi()
   ui.createMenu('欠席連絡')
-    .addItem('連絡テキスト生成 (来月分)', 'generateAbsenceTextForNextMonth')
-    .addSeparator()
-    .addItem('年月を指定して生成...', 'generateAbsenceTextForSpecificMonth')
+    .addItem('連絡テキスト生成 (今月分)', 'generateAbsenceTextForThisMonth')
     .addToUi()
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function generateAbsenceTextForNextMonth(): void {
+function generateAbsenceTextForThisMonth(): void {
   const ui = SpreadsheetApp.getUi()
   try {
     const resultSheet =
@@ -322,7 +298,7 @@ function generateAbsenceTextForNextMonth(): void {
           const description = line[0]
           const date = line[1]
           const dateStr = Utilities.formatDate(date, 'Asia/Tokyo', 'M/d HH:mm')
-          outputData.push([`    ${description}`, dateStr])
+          outputData.push([`    ${dateStr} ${description}`])
         }
         outputData.push(['', ''])
       }
