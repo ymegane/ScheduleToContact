@@ -159,6 +159,111 @@ function generateTextForWebApp(): {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function generateAbsenceTextForSpecificMonth(): void {
+  const ui = SpreadsheetApp.getUi()
+  try {
+    // --- 1. Get year and month from user ---
+    const yearResponse = ui.prompt(
+      '年と月を指定',
+      '年を入力してください (例: 2023)',
+      ui.ButtonSet.OK_CANCEL
+    )
+    if (
+      yearResponse.getSelectedButton() !== ui.Button.OK ||
+      !yearResponse.getResponseText()
+    ) {
+      return // User cancelled
+    }
+    const year = parseInt(yearResponse.getResponseText(), 10)
+    if (isNaN(year) || year < 2000 || year > 2100) {
+      ui.alert('エラー: 無効な年が入力されました。')
+      return
+    }
+
+    const monthResponse = ui.prompt(
+      '年と月を指定',
+      '月を入力してください (1-12)',
+      ui.ButtonSet.OK_CANCEL
+    )
+    if (
+      monthResponse.getSelectedButton() !== ui.Button.OK ||
+      !monthResponse.getResponseText()
+    ) {
+      return // User cancelled
+    }
+    const month = parseInt(monthResponse.getResponseText(), 10)
+    if (isNaN(month) || month < 1 || month > 12) {
+      ui.alert('エラー: 無効な月が入力されました。')
+      return
+    }
+
+    // --- 2. Generate data for the specified month ---
+    const resultSheet =
+      SpreadsheetApp.getActiveSpreadsheet().getSheetByName('生成結果')
+    if (!resultSheet) {
+      ui.alert('エラー: 「生成結果」シートが見つかりません。')
+      return
+    }
+
+    const { groupedResults, events, missingKeywords } =
+      _generateContactTextData(year, month)
+
+    // --- 3. Write to spreadsheet (same logic as before) ---
+    resultSheet.clear()
+    const outputData: (string | Date)[][] = []
+
+    if (groupedResults.size > 0) {
+      for (const [action, lines] of groupedResults.entries()) {
+        outputData.push([`[${action}]`, ''])
+        for (const line of lines) {
+          const description = line[0]
+          const date = line[1]
+          const dateStr = Utilities.formatDate(date, 'Asia/Tokyo', 'M/d HH:mm')
+          outputData.push([`    ${dateStr} ${description}`])
+        }
+        outputData.push(['', ''])
+      }
+    } else {
+      outputData.push([`[${year}年${month}月] 対象の予定は見つかりませんでした。`, ''])
+      outputData.push(['', ''])
+    }
+
+    // --- 4. Debug info ---
+    outputData.push(['--- 取得したカレンダーの予定 --- ', ''])
+    if (events.length > 0) {
+      for (const event of events) {
+        const startTime = Utilities.formatDate(
+          event.getStartTime(),
+          'Asia/Tokyo',
+          'M/d HH:mm'
+        )
+        outputData.push([`${startTime} ${event.getTitle()}`, ''])
+      }
+    } else {
+      outputData.push(['（予定なし）', ''])
+    }
+
+    resultSheet.getRange(1, 1, outputData.length, 2).setValues(outputData)
+    ui.alert(`[${year}年${month}月] の連絡テキストを生成しました！`)
+
+    // --- 5. Missing keywords warning ---
+    if (missingKeywords.length > 0) {
+      ui.alert(
+        `警告: 以下の必須予定が見つかりませんでした。\n・${missingKeywords.join('\n・')}`
+      )
+    }
+
+    resultSheet.activate()
+  } catch (e) {
+    if (e instanceof Error) {
+      ui.alert(e.message)
+    } else {
+      ui.alert(String(e))
+    }
+  }
+}
+
 /**
  * ----------------------------------------------------------------
  * Spreadsheet-bound Functions
@@ -197,7 +302,7 @@ function generateAbsenceTextForThisMonth(): void {
           const description = line[0]
           const date = line[1]
           const dateStr = Utilities.formatDate(date, 'Asia/Tokyo', 'M/d HH:mm')
-          outputData.push([`    ${description}`, dateStr])
+          outputData.push([`    ${dateStr} ${description}`])
         }
         outputData.push(['', ''])
       }
